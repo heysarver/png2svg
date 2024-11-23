@@ -26,3 +26,4 @@ venv/
 ENV/
 .idea/
 .vscode/
+*.svg

@@ -33,6 +33,3 @@ Homepage = "https://github.com/heysarver/png2svg"
 
 [tool.setuptools.packages.find]
 where = ["png2svg"]
-
-[tool.setuptools.entry-points.console_scripts]
-png2svg = "png2svg.cli:main"

@@ -23,10 +23,16 @@ class PNG2SVG:
         """
         # Extract the region using the mask
         region = image.copy()
-        region[~mask] = [0, 0, 0, 0]
+        if region.shape[2] == 4:
+            region[~mask] = [0, 0, 0, 0]
+        else:
+            region[~mask] = [0, 0, 0]
         
         # Convert RGBA to BGRA for OpenCV
-        region_cv = cv2.cvtColor(region, cv2.COLOR_RGBA2BGRA)
+        if region.shape[2] == 4:
+            region_cv = cv2.cvtColor(region, cv2.COLOR_RGBA2BGRA)
+        else:
+            region_cv = cv2.cvtColor(region, cv2.COLOR_RGB2BGR)
         
         # Get unique colors in the masked region
         valid_pixels = region[mask]
@@ -34,7 +40,7 @@ class PNG2SVG:
             return None
             
         # Find the gradient direction using Sobel
-        gray = cv2.cvtColor(region_cv, cv2.COLOR_BGRA2GRAY)
+        gray = cv2.cvtColor(region_cv, cv2.COLOR_BGRA2GRAY) if region.shape[2] == 4 else cv2.cvtColor(region_cv, cv2.COLOR_BGR2GRAY)
         sobel_x = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
         sobel_y = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
         
@@ -64,8 +70,12 @@ class PNG2SVG:
 
     def find_shapes(self, image):
         """Find distinct shapes in the image using connected components."""
-        # Create binary mask of non-transparent pixels
-        alpha = image[:, :, 3] > 0
+        # Check if image has an alpha channel
+        if image.shape[2] == 4:
+            alpha = image[:, :, 3] > 0
+        else:
+            # Assume fully opaque if no alpha channel
+            alpha = np.ones(image.shape[:2], dtype=bool)
         
         # Find connected components
         labeled, num_features = ndimage.label(alpha)
@@ -159,7 +169,7 @@ class PNG2SVG:
                 fill = self._format_color(color[:3])
             
             # Add the path with appropriate fill
-            opacity = np.mean(img[mask][:, 3]) / 255
+            opacity = np.mean(img[mask][:, 3]) / 255 if img.shape[2] == 4 else 1
             path_element = dwg.path(d=path, fill=fill, fill_opacity=opacity)
             dwg.add(path_element)
         
